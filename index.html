@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VCU Light Studio - Telemetry & Strobe</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #131c2e;
+            --accent: #00ff66;
+            --accent-glow: rgba(0, 255, 102, 0.3);
+            --text-main: #ffffff;
+            --text-muted: #8a99ad;
+            --danger: #ff3366;
+            --danger-glow: rgba(255, 51, 102, 0.4);
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 22px;
+            margin: 0 0 5px 0;
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin: 0;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        /* Live Telemetrie Grid */
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .metric-card {
+            background-color: #101826;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px 10px;
+            text-align: center;
+        }
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .metric-unit {
+            font-size: 11px;
+            color: var(--accent);
+            font-weight: normal;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        #connectBtn {
+            background-color: var(--accent);
+            color: #000;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+        #connectBtn:hover {
+            background-color: #00cc52;
+        }
+        #connectBtn.connected {
+            background-color: #1f2c42;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+        .light-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .light-btn {
+            background-color: #1a263d;
+            color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 16px 10px;
+            font-size: 14px;
+            border-radius: 10px;
+        }
+        .light-btn:hover:not(:disabled) {
+            background-color: #243554;
+            border-color: var(--accent);
+        }
+        .light-btn.active {
+            background-color: var(--accent);
+            color: #000;
+            font-weight: bold;
+        }
+        .light-btn.strobe {
+            border-color: var(--danger);
+            grid-column: span 2;
+        }
+        .light-btn.strobe.active {
+            background-color: var(--danger);
+            color: #fff;
+            box-shadow: 0 0 20px var(--danger-glow);
+            animation: pulseStrobe 0.2s infinite alternate;
+        }
+        @keyframes pulseStrobe {
+            0% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+        .slider-container {
+            margin-top: 15px;
+            background: #101826;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .slider-container label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--danger);
+            cursor: pointer;
+        }
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        #log {
+            background-color: #07090f;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #00ff66;
+            height: 80px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .status-badge {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--danger);
+            margin-right: 6px;
+        }
+        .status-badge.online {
+            background-color: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>VCU Light Studio</h1>
+        <p class="subtitle">Live Telemetrie & Licht</p>
+    </header>
+
+    <!-- Live Telemetrie Dashboard -->
+    <div class="telemetry-grid">
+        <div class="metric-card">
+            <div class="metric-label">Tempo</div>
+            <div class="metric-value"><span id="valSpeed">0.0</span> <span class="metric-unit">km/h</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Leistung</div>
+            <div class="metric-value"><span id="valPower">0</span> <span class="metric-unit">W</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Spannung</div>
+            <div class="metric-value"><span id="valVoltage">0.0</span> <span class="metric-unit">V</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Akku</div>
+            <div class="metric-value"><span id="valBattery">--</span> <span class="metric-unit">%</span></div>
+        </div>
+    </div>
+
+    <!-- Verbindung Card -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 14px; color: var(--text-muted);"><span id="statusDot" class="status-badge"></span><span id="statusText">Getrennt</span></span>
+        </div>
+        <button id="connectBtn">Scooter verbinden</button>
+    </div>
+
+    <!-- Licht Modi Card -->
+    <div class="card">
+        <h3 style="margin-top: 0; font-size: 15px; color: var(--text-muted);">Scheinwerfer & Effekte</h3>
+        <div class="light-grid">
+            <button class="light-btn" id="btnLightOff" disabled onclick="setLightMode('off')">Licht Aus</button>
+            <button class="light-btn" id="btnLightOn" disabled onclick="setLightMode('on')">Dauerlicht</button>
+            <button class="light-btn strobe" id="btnStrobe" disabled onclick="toggleStrobe()">⚡ Strobe Light (Software)</button>
+        </div>
+
+        <!-- Schieberegler für Blink-Geschwindigkeit -->
+        <div class="slider-container">
+            <label for="speedRange">
+                <span>Blink-Intervall</span>
+                <span id="speedValue" style="color: var(--text-main); font-weight: bold;">120 ms</span>
+            </label>
+            <input type="range" id="speedRange" min="60" max="300" step="10" value="120" oninput="changeSpeed(this.value)">
+        </div>
+    </div>
+
+    <!-- Log Console -->
+    <div class="card" style="margin-bottom: 0;">
+        <h3 style="margin-top: 0; font-size: 13px; color: var(--text-muted);">Konsole / Debug</h3>
+        <div id="log">Bereit. Bitte verbinde deinen E-Scooter.</div>
+    </div>
+</div>
+
+<script>
+    let bluetoothDevice = null;
+    let bluetoothServer = null;
+    let writeCharacteristic = null;
+    let notifyCharacteristic = null;
+    let strobeInterval = null;
+    let currentSpeed = 120;
+
+    const connectBtn = document.getElementById('connectBtn');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const logDiv = document.getElementById('log');
+    const lightButtons = document.querySelectorAll('.light-btn');
+    const speedValueLabel = document.getElementById('speedValue');
+
+    // UI Elemente Telemetrie
+    const valSpeed = document.getElementById('valSpeed');
+    const valPower = document.getElementById('valPower');
+    const valVoltage = document.getElementById('valVoltage');
+    const valBattery = document.getElementById('valBattery');
+
+    function log(msg) {
+        logDiv.innerHTML += `<br>> ${msg}`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    connectBtn.addEventListener('click', async () => {
+        if (!bluetoothDevice || !bluetoothDevice.gatt.connected) {
+            try {
+                log('Suche nach E-Scooter...');
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: [
+                        '0000ffe0-0000-1000-8000-00805f9b34fb',
+                        '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+                    ]
+                });
+
+                log(`Verbinde mit ${bluetoothDevice.name || 'Scooter'}...`);
+                bluetoothServer = await bluetoothDevice.gatt.connect();
+                
+                const service = await bluetoothServer.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                writeCharacteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                
+                try {
+                    notifyCharacteristic = await service.getCharacteristic('0000ffe2-0000-1000-8000-00805f9b34fb');
+                    notifyCharacteristic.addEventListener('characteristicvaluechanged', handleTelemetryData);
+                    await notifyCharacteristic.startNotifications();
+                    log('Live-Telemetrie Stream aktiv.');
+                } catch (e) {
+                    log('Hinweis: Notify-Kanal nicht direkt verfügbar.');
+                }
+
+                connectBtn.textContent = 'Verbindung trennen';
+                connectBtn.classList.add('connected');
+                statusDot.classList.add('online');
+                statusText.textContent = 'Verbunden';
+                log('Erfolgreich verbunden!');
+
+                lightButtons.forEach(btn => btn.disabled = false);
+                bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+            } catch (error) {
+                log(`Verbindungsfehler: ${error}`);
+            }
+        } else {
+            if (bluetoothDevice.gatt.connected) {
+                bluetoothDevice.gatt.disconnect();
+            }
+        }
+    });
+
+    function onDisconnected() {
+        stopStrobe();
+        log('Verbindung getrennt.');
+        connectBtn.textContent = 'Scooter verbinden';
+        connectBtn.classList.remove('connected');
+        statusDot.classList.remove('online');
+        statusText.textContent = 'Getrennt';
+        
+        valSpeed.textContent = '0.0';
+        valPower.textContent = '0';
+        valVoltage.textContent = '0.0';
+        valBattery.textContent = '--';
+
+        lightButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.classList.remove('active');
+        });
+    }
+
+    // Telemetrie Daten auswerten und live berechnen
+    function handleTelemetryData(event) {
+        const dataView = event.target.value;
+        
+        try {
+            // Beispielhafte Offsets für Ninebot Protokoll-Pakete (anpassbar je nach exakter FW):
+            // Angenommen: Volt liegt als uint16 bei Offset 4 (z.B. 415 -> 41.5V)
+            // Angenommen: Strom (Ampere) liegt als int16 mit Vorzeichen bei Offset 6
+            // Angenommen: Geschwindigkeit bei Offset 2
+            // Angenommen: Akkustand in Prozent als uint8 bei Offset 10
+
+            if (dataView.byteLength >= 12) {
+                let rawVoltage = dataView.getUint16(4, true);
+                let voltage = rawVoltage / 10; // z.B. 41.5 V
+                
+                let rawCurrent = dataView.getInt16(6, true);
+                let current = rawCurrent / 10; // z.B. 15.0 A
+
+                let rawSpeed = dataView.getUint16(2, true);
+                let speed = rawSpeed / 10; // z.B. 22.0 km/h
+
+                let batteryPct = dataView.getUint8(10); // z.B. 85%
+
+                // Leistung in Watt berechnen: P = U * I (Volt mal Ampere)
+                let power = Math.round(voltage * current);
+                if (power < 0) power = 0; // Negative Leistung bei Rekuperation abfangen falls gewünscht
+
+                // Werte auf dem Dashboard aktualisieren
+                valVoltage.textContent = voltage.toFixed(1);
+                valSpeed.textContent = speed.toFixed(1);
+                valBattery.textContent = batteryPct;
+                valPower.textContent = power;
+            }
+        } catch (err) {
+            console.error("Fehler beim Parsen der Telemetrie-Daten:", err);
+        }
+    }
+
+    async function sendCommand(hexArray) {
+        if (!writeCharacteristic) return;
+        try {
+            const buffer = new Uint8Array(hexArray);
+            await writeCharacteristic.writeValue(buffer);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function setLightMode(mode) {
+        stopStrobe();
+        document.getElementById('btnLightOff').classList.remove('active');
+        document.getElementById('btnLightOn').classList.remove('active');
+
+        if (mode === 'off') {
+            document.getElementById('btnLightOff').classList.add('active');
+            await sendCommand([0x55, 0xAA, 0x03, 0x12, 0x00, 0xED, 0xFF]);
+            log('Licht Aus');
+        } else if (mode === 'on') {
+            document.getElementById('btnLightOn').classList.add('active');
+            await sendCommand([0x55, 0xAA, 0x03, 0x12, 0x01, 0xEC, 0xFF]);
+            log('Dauerlicht Ein');
+        }
+    }
+
+    function toggleStrobe() {
+        const btnStrobe = document.getElementById('btnStrobe');
+        
+        if (strobeInterval) {
+            stopStrobe();
+            log('Strobe Light gestoppt.');
+        } else {
+            document.getElementById('btnLightOff').classList.remove('active');
+            document.getElementById('btnLightOn').classList.remove('active');
+            btnStrobe.classList.add('active');
+            log(`⚡ Strobe gestartet (${currentSpeed} ms)`);
+
+            startStrobeLoop();
+        }
+    }
+
+    function startStrobeLoop() {
+        if (strobeInterval) clearInterval(strobeInterval);
+
+        let lightState = false;
+        strobeInterval = setInterval(async () => {
+            lightState = !lightState;
+            if (lightState) {
+                await sendCommand([0x55, 0xAA, 0x03, 0x12, 0x01, 0xEC, 0xFF]);
+            } else {
+                await sendCommand([0x55, 0xAA, 0x03, 0x12, 0x00, 0xED, 0xFF]);
+            }
+        }, currentSpeed);
+    }
+
+    function changeSpeed(val) {
+        currentSpeed = parseInt(val);
+        speedValueLabel.textContent = `${currentSpeed} ms`;
+
+        if (strobeInterval) {
+            startStrobeLoop();
+        }
+    }
+
+    function stopStrobe() {
+        if (strobeInterval) {
+            clearInterval(strobeInterval);
+            strobeInterval = null;
+        }
+        document.getElementById('btnStrobe').classList.remove('active');
+    }
+</script>
+
+</body>
+</html>
