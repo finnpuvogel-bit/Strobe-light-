@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max G3 VCU Binary Patcher</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #131c2e;
+            --input-bg: #0e1524;
+            --accent: #00ff66;
+            --accent-glow: rgba(0, 255, 102, 0.25);
+            --text-main: #ffffff;
+            --text-muted: #8a99ad;
+            --danger: #ff3366;
+            --warning: #ffaa00;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container { width: 100%; max-width: 540px; }
+        header { text-align: center; margin-bottom: 24px; }
+        h1 { font-size: 24px; margin: 0 0 6px 0; color: var(--accent); text-shadow: 0 0 12px var(--accent-glow); }
+        p.subtitle { color: var(--text-muted); font-size: 13px; margin: 0; }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        .card h3 { margin: 0 0 14px 0; font-size: 15px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.6px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group:last-child { margin-bottom: 0; }
+        label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+        
+        /* File Upload Styling */
+        .file-upload-box {
+            border: 2px dashed rgba(0, 255, 102, 0.4);
+            background-color: var(--input-bg);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .file-upload-box:hover {
+            border-color: var(--accent);
+            background-color: rgba(0, 255, 102, 0.05);
+        }
+        .file-upload-box.loaded {
+            border-style: solid;
+            border-color: var(--accent);
+        }
+        input[type="file"] { display: none; }
+        
+        select, input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--input-bg);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+        }
+        select:focus, input[type="text"]:focus { border-color: var(--accent); }
+        
+        .offset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .slider-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+        
+        button#patchBtn {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            background-color: var(--accent);
+            color: #000;
+            cursor: pointer;
+            box-shadow: 0 4px 18px var(--accent-glow);
+            transition: all 0.2s ease;
+        }
+        button#patchBtn:disabled {
+            background-color: #243147;
+            color: #6c7c94;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+        button#patchBtn:hover:not(:disabled) { background-color: #00cc52; }
+        
+        .log-box {
+            background-color: #07090f;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #00ff66;
+            margin-top: 14px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Max G3 VCU Binary Patcher</h1>
+        <p class="subtitle">Stock-Firmware hochladen, Bytes patchen & für SHU exportieren</p>
+    </header>
+
+    <!-- Schritt 1: Originale Stock VCU Datei hochladen -->
+    <div class="card">
+        <h3>1. Originale Stock-VCU hochladen (.bin)</h3>
+        <div class="file-upload-box" id="dropZone" onclick="document.getElementById('fwFile').click()">
+            <div id="fileStatusText" style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">
+                📁 Klicke hier, um deine Stock-VCU (.bin) auszuwählen
+            </div>
+            <div id="fileSubText" style="font-size: 12px; color: var(--text-muted);">
+                z. B. MaxG3_VCU_5.2.8_Stock.bin (unverschlüsselt)
+            </div>
+        </div>
+        <input type="file" id="fwFile" accept=".bin" onchange="handleFileUpload(event)">
+    </div>
+
+    <!-- Schritt 2: Action Button Belegung -->
+    <div class="card">
+        <h3>2. Action-Button & Licht-Patches</h3>
+        
+        <div class="form-group">
+            <label for="btnDouble">2x Action-Button schnell drücken (Doppelklick)</label>
+            <select id="btnDouble">
+                <option value="02" selected>⚡ Strobe Light umschalten (Patch-Byte: 0x02)</option>
+                <option value="01">Frontlicht An/Aus (Patch-Byte: 0x01)</option>
+                <option value="00">Original belassen (Kein Patch)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="btnHold">Action-Button gedrückt halten (2 Sek.)</label>
+            <select id="btnHold">
+                <option value="05" selected>⚡ Strobe-Lichthupe solange gedrückt (Patch-Byte: 0x05)</option>
+                <option value="00">Original belassen (Kein Patch)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <div class="slider-header">
+                <span style="color: var(--text-muted);">Strobe-Frequenz (Hardware-Timer)</span>
+                <span id="freqLabel" style="font-weight: bold; color: var(--accent);">10 Hz (0x0A)</span>
+            </div>
+            <input type="range" id="strobeFreq" min="2" max="25" value="10" oninput="updateFreqLabel(this.value)">
+        </div>
+    </div>
+
+    <!-- Schritt 3: Ziel-Offsets (Speicheradressen in der VCU Binary) -->
+    <div class="card">
+        <h3>3. Hex-Offsets in der Firmware (Experten)</h3>
+        <div class="offset-grid">
+            <div class="form-group">
+                <label for="offsetBtn">Button-Handler Offset (Hex)</label>
+                <input type="text" id="offsetBtn" value="0x1A40">
+            </div>
+            <div class="form-group">
+                <label for="offsetFreq">Strobe-Timer Offset (Hex)</label>
+                <input type="text" id="offsetFreq" value="0x1A44">
+            </div>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted);">
+            Hinweis: Passe diese Hex-Adressen an die exakten Offsets deines Disassembly-Dumps an, bevor du die Datei flasht.
+        </div>
+    </div>
+
+    <!-- Schritt 4: Patchen & Download -->
+    <div class="card" style="margin-bottom: 0;">
+        <button id="patchBtn" disabled onclick="patchAndDownload()">Bitte zuerst Stock-VCU hochladen</button>
+        <div class="log-box" id="logBox">Bereit. Warte auf Stock-Firmware...</div>
+    </div>
+</div>
+
+<script>
+    let originalBuffer = null;
+    let originalFileName = "";
+
+    function log(msg) {
+        const box = document.getElementById('logBox');
+        box.innerHTML += `<br>> ${msg}`;
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function updateFreqLabel(val) {
+        const hex = ('0' + parseInt(val).toString(16).toUpperCase()).slice(-2);
+        document.getElementById('freqLabel').textContent = `${val} Hz (0x${hex})`;
+    }
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        originalFileName = file.name.replace('.bin', '');
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            originalBuffer = new Uint8Array(e.target.result);
+            
+            document.getElementById('dropZone').classList.add('loaded');
+            document.getElementById('fileStatusText').textContent = `✅ Geladen: ${file.name}`;
+            document.getElementById('fileSubText').textContent = `Dateigröße: ${originalBuffer.length} Bytes (${(originalBuffer.length / 1024).toFixed(1)} KB)`;
+            
+            const btn = document.getElementById('patchBtn');
+            btn.disabled = false;
+            btn.textContent = "Gepatchte VCU-Datei generieren & herunterladen";
+
+            log(`Datei "${file.name}" erfolgreich eingelesen (${originalBuffer.length} Bytes).`);
+        };
+
+        reader.readAsArrayBuffer(file);
+    }
+
+    function patchAndDownload() {
+        if (!originalBuffer) return;
+
+        // Kopie des originalen Buffers erstellen, damit wir sauber patchen können
+        const patchedBuffer = new Uint8Array(originalBuffer);
+
+        // Hex-Offsets aus den Eingabefeldern parsen
+        const btnOffset  = parseInt(document.getElementById('offsetBtn').value, 16);
+        const freqOffset = parseInt(document.getElementById('offsetFreq').value, 16);
+
+        // Werte auslesen
+        const doubleVal = parseInt(document.getElementById('btnDouble').value, 16);
+        const holdVal   = parseInt(document.getElementById('btnHold').value, 16);
+        const freqVal   = parseInt(document.getElementById('strobeFreq').value);
+
+        // Prüfen, ob die Offsets innerhalb der Dateigröße liegen
+        if (isNaN(btnOffset) || btnOffset + 1 >= patchedBuffer.length || isNaN(freqOffset) || freqOffset >= patchedBuffer.length) {
+            log("❌ FEHLER: Einer der Hex-Offsets liegt außerhalb der Dateigröße!");
+            return;
+        }
+
+        // Bytes in der Kopie ersetzen (Patchen)
+        if (doubleVal !== 0x00) {
+            const oldByte = patchedBuffer[btnOffset].toString(16).toUpperCase();
+            patchedBuffer[btnOffset] = doubleVal;
+            log(`Offset 0x${btnOffset.toString(16).toUpperCase()}: 0x${oldByte} -> 0x${doubleVal.toString(16).toUpperCase()} (Doppelklick)`);
+        }
+
+        if (holdVal !== 0x00) {
+            const oldByteHold = patchedBuffer[btnOffset + 1].toString(16).toUpperCase();
+            patchedBuffer[btnOffset + 1] = holdVal;
+            log(`Offset 0x${(btnOffset + 1).toString(16).toUpperCase()}: 0x${oldByteHold} -> 0x${holdVal.toString(16).toUpperCase()} (Gedrückt halten)`);
+        }
+
+        const oldFreqByte = patchedBuffer[freqOffset].toString(16).toUpperCase();
+        patchedBuffer[freqOffset] = freqVal;
+        log(`Offset 0x${freqOffset.toString(16).toUpperCase()}: 0x${oldFreqByte} -> 0x${freqVal.toString(16).toUpperCase()} (Strobe-Frequenz)`);
+
+        // Gepatchte Binary herunterladen
+        const blob = new Blob([patchedBuffer], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${originalFileName}_PATCHED_SHU.bin`;
+        document.body.appendChild(a);
+        a.click();
+        
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        log(`✅ Download gestartet: ${originalFileName}_PATCHED_SHU.bin`);
+    }
+</script>
+
+</body>
+</html>
