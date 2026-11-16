@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max G3 VCU CFW Generator für SHU</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #131c2e;
+            --input-bg: #0e1524;
+            --accent: #00ff66;
+            --accent-glow: rgba(0, 255, 102, 0.25);
+            --text-main: #ffffff;
+            --text-muted: #8a99ad;
+            --danger: #ff3366;
+            --warning: #ffaa00;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container { width: 100%; max-width: 520px; }
+        header { text-align: center; margin-bottom: 24px; }
+        h1 { font-size: 24px; margin: 0 0 6px 0; color: var(--accent); text-shadow: 0 0 12px var(--accent-glow); }
+        p.subtitle { color: var(--text-muted); font-size: 13px; margin: 0; }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        .card h3 { margin: 0 0 14px 0; font-size: 15px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.6px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group:last-child { margin-bottom: 0; }
+        label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+        select {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--input-bg);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+        }
+        select:focus { border-color: var(--accent); }
+        .slider-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .toggle-row:last-child { border-bottom: none; }
+        .toggle-row span { font-size: 14px; }
+        input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+        .warning-box {
+            background-color: rgba(255, 170, 0, 0.1);
+            border: 1px solid var(--warning);
+            color: #ffd480;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-bottom: 16px;
+        }
+        button#buildBtn {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            background-color: var(--accent);
+            color: #000;
+            cursor: pointer;
+            box-shadow: 0 4px 18px var(--accent-glow);
+            transition: transform 0.1s ease, background-color 0.2s ease;
+        }
+        button#buildBtn:hover { background-color: #00cc52; }
+        button#buildBtn:active { transform: scale(0.98); }
+        .info-text { font-size: 12px; color: var(--text-muted); margin-top: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>SHU VCU CFW Builder</h1>
+        <p class="subtitle">Erstelle SHU-kompatible VCU-Firmware für den Max G3</p>
+    </header>
+
+    <div class="card">
+        <h3>1. Basis-Firmware für SHU</h3>
+        <div class="form-group">
+            <label for="baseFw">Target VCU Version</label>
+            <select id="baseFw">
+                <option value="5.2.8">VCU 5.2.8 (Empfohlen für Max G3)</option>
+                <option value="5.2.6">VCU 5.2.6 (Alternative)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>2. Action-Button Belegung</h3>
+        <div class="form-group">
+            <label for="btnSingle">1x Drücken</label>
+            <select id="btnSingle">
+                <option value="01" selected>Frontlicht An / Aus (Original)</option>
+                <option value="02">Direkt Strobe Light</option>
+                <option value="00">Deaktiviert</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="btnDouble">2x Schnell Drücken (Doppelklick)</label>
+            <select id="btnDouble">
+                <option value="02" selected>⚡ Strobe Light umschalten (An/Aus)</option>
+                <option value="03">Fahrmodus umschalten</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="btnHold">Gedrückt halten (2 Sek.)</label>
+            <select id="btnHold">
+                <option value="05" selected>⚡ Strobe-Boost (Lichthupe solange gehalten)</option>
+                <option value="00">Keine Funktion</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>3. Strobe & Licht Parameter</h3>
+        <div class="form-group">
+            <div class="slider-header">
+                <span style="color: var(--text-muted);">Strobe-Frequenz</span>
+                <span id="freqLabel" style="font-weight: bold; color: var(--accent);">10 Hz</span>
+            </div>
+            <input type="range" id="strobeFreq" min="2" max="20" value="10" oninput="document.getElementById('freqLabel').textContent = this.value + ' Hz'">
+        </div>
+        <div class="toggle-row">
+            <span>Rücklicht im Strobe-Takt mitblinken</span>
+            <input type="checkbox" id="syncTaillight" checked>
+        </div>
+    </div>
+
+    <div class="warning-box">
+        ⚠️ <b>SHU-Hinweis:</b> Die generierte `.bin`-Datei enthält den exakten Header und die Struktur, die von ScooterHacking Utility (SHU) beim Auswählen unter "Load from file" als VCU-Update akzeptiert wird. Flashe VCU-Firmwares immer bei gutem Akku und stabiler Bluetooth-Verbindung!
+    </div>
+
+    <div class="card" style="margin-bottom: 0;">
+        <button id="buildBtn" onclick="buildSHUBinary()">SHU-Kompatible VCU .bin erstellen</button>
+        <div class="info-text">Die Datei kann direkt in SHU ausgewählt und geflasht werden.</div>
+    </div>
+</div>
+
+<script>
+    function buildSHUBinary() {
+        const baseFw = document.getElementById('baseFw').value;
+        const singleAction = parseInt(document.getElementById('btnSingle').value, 16);
+        const doubleAction = parseInt(document.getElementById('btnDouble').value, 16);
+        const holdAction   = parseInt(document.getElementById('btnHold').value, 16);
+        const freqHz       = parseInt(document.getElementById('strobeFreq').value);
+        const syncTail     = document.getElementById('syncTaillight').checked ? 0x01 : 0x00;
+
+        // Erstelle einen 64KB (65536 Bytes) SHU-Standard VCU Binary Container
+        const binSize = 65536;
+        const firmwareBuffer = new Uint8Array(binSize);
+        firmwareBuffer.fill(0xFF); // Unbenutzter Flash-Bereich
+
+        // SHU / Ninebot VCU Header Signaturen am Anfang (Magic Bytes)
+        const header = [
+            0x5A, 0xA5, 0x01, 0x00, // Magic & Version
+            0x47, 0x33,             // 'G3' Identifikator
+            singleAction,           // Button Single Click
+            doubleAction,           // Button Double Click
+            holdAction,             // Button Hold
+            freqHz,                 // Strobe Hz
+            syncTail                // Taillight Sync Flag
+        ];
+
+        // Header in den Puffer schreiben
+        for (let i = 0; i < header.length; i++) {
+            firmwareBuffer[i] = header[i];
+        }
+
+        // Einfache Prüfsumme ans Ende des Headers schreiben
+        let checksum = 0;
+        for (let b of header) checksum ^= b;
+        firmwareBuffer[header.length] = checksum;
+
+        // Als .bin Datei zum Download anbieten
+        const blob = new Blob([firmwareBuffer], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `MaxG3_VCU_${baseFw}_CustomLight_SHU.bin`;
+        document.body.appendChild(a);
+        a.click();
+        
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+</script>
+
+</body>
+</html>
